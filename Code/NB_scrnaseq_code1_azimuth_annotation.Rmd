@@ -1,0 +1,81 @@
+---
+title: "Code for Azimuth annotation"
+output: html_notebook
+---
+
+This notebook reports the steps to to annotate the cells for Dataset A and B according to the Azimuth annotation for the article Donada et al.
+Please refer to the article for more details.
+
+## Libraries and sources
+Load libraries
+
+```{r}
+library(tidyverse)
+library(Seurat)
+library(matrixStats)
+library(Azimuth)
+```
+
+Set working directory and load routines 
+You can set your own path where the file is located, for example:  
+setwd("C:\\Users\\UserName\\Documents\\Transcriptomics")
+
+```{r}
+script_path <- rstudioapi::getActiveDocumentContext()$path 
+setwd(dirname(script_path))
+source("repository_functions.R")
+```
+
+
+
+## Parameters
+Select parameters to run Azimuth with a small dataset
+```{r}
+mapping_score_k <- 7
+k_weight <- 7
+k_param <- 7 
+```
+
+## Load datasets
+DatasetA 
+```{r}
+output_A<-summary_load_v2("../Datasets/dataset1_raw_matrix.csv", 
+                          "../Datasets/dataset1_metadata_input.csv")
+datasetA<-output_A$obj
+datasetA_metadata<-output_A$nm_cells
+```
+
+DatasetB 
+```{r}
+output_B<-summary_load_v2("../Datasets/dataset3_raw_matrix.csv", 
+                          "../Datasets/dataset3_metadata_input.csv")
+datasetB<-output_B$obj
+datasetB_metadata<-output_B$nm_cells
+```
+
+Create Seurat Objects
+```{r}
+expA.realdata <-seurat_object_wt_metadata(datasetA, datasetA_metadata)
+expB.realdata <-seurat_object_wt_metadata(datasetB, datasetB_metadata)
+```
+
+# Run azimuth
+```{r}
+expA.azimuth <- expA.realdata
+expB.azimuth <- expB.realdata
+expA.azimuth <- run_azimuth(expA.azimuth, mapping_score_k, k_weight, k_param)
+expB.azimuth <- run_azimuth(expB.azimuth, mapping_score_k, k_weight, k_param)
+```
+Merge  Azimuth annotation for dataset A and dataset B 
+```{r}
+merged.ann <-
+  rbind(expA.azimuth@meta.data %>% select("predicted.celltype.l2"),
+    expB.azimuth@meta.data %>% select("predicted.celltype.l2"))
+colnames(merged.ann) <- "separated.azimuth"
+```
+
+# Save the new metadata
+```{r}
+metadataA_complete <- metadata_citeseq_azimuth("../Datasets/dataset1_metadata_input.csv","../Output/dataset1_metadata_step1.csv", expA.azimuth, merged.ann)
+metadataB_complete <- metadata_citeseq_azimuth("../Datasets/dataset3_metadata_input.csv", "../Output/dataset3_metadata_step1.csv",expB.azimuth, merged.ann)
+```

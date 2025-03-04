@@ -76,7 +76,7 @@ new_vars<- compute_homogeneity(stem.combined@meta.data)
 rownames(new_vars) <- new_vars$n_cells
 ```
 
-## Prepare input for single variable TF-MIIC
+## Prepare input for feature selection
 ```{r}
 df.merged <- merge(stem.combined@meta.data, 
                new_vars[, c("homogeneity", "n_celltypes")],
@@ -90,7 +90,7 @@ datasets <- data.frame(stem.combined@assays$RNA@counts)
 df.merged[is.na(df.merged$family),]$family <- "missing_family"
 ```
 
-## Run TF-MIIC
+## Run feature selection
 ```{r}
 if (flag_avg){
 all_groups <- c("^MT-", "^RPL", "^RPS", "^MRPL", "^MRPS")
@@ -125,7 +125,7 @@ for (i in 1:length(vec_TF)) {
 }
 ```
 
-## Write table with info_shifted for each TF and each cell
+## Write table with info_shifted for each regulator 
 ```{r}
 df <- all_res
 df <- do.call(cbind, df)
@@ -140,7 +140,7 @@ write.csv(df, "../Output/df_for_fs.csv", row.names=T)
 ```{r}
 rm(df)
 # Reload dataframe from saved file
-df <- read.csv(sprintf("filtering\\%s.csv", n_try), header=T, row.names="X")
+df <- read.csv( "../Output/df_for_fs.csv", header=T,row.names="X")
 
 # Delete mitochondrial and ribosomial genes, 
 if (!flag_avg){
@@ -152,22 +152,21 @@ to_delete <- c("^MT-|^RPL|^RPS|^MRPL|^MRPS")
 # Filter variables
 vars <- filter_info(df,th1, to_delete)
 vars2 <- filter_info(df,th2, to_delete)
+vars3 <- filter_info(df%>%select(-c("family")),th1, to_delete)
+vars4 <- filter_info(df%>%select(-c("family")),th2, to_delete)
 ```
 
 ## Save input
+Save input and check equality with original file.
 ```{r}
-df_family <- save_input(my_TF, stem.combined, df.merged, 
-                        vars, vars2, 'wtfamily_thv1', 
-                        sprintf("%s", n_try))
-prova_check(df_family, dataset1, "exp1")
-prova_check(df_family, dataset3, "exp3")
-#without family
-vars <- filter_info(df%>%select(-c("family")),th1, to_delete)
-vars2 <- filter_info(df%>%select(-c("family")),th2, to_delete)
-df_wo_family <- save_input(my_TF[-1], stem.combined, df.merged%>% select(-c("family")), 
-                           vars, vars2, 'wofamily_thv1', 
-                           sprintf("%s", n_try))
-prova_check(df_wo_family, dataset1, "exp1")
-prova_check(df_wo_family, dataset3, "exp3")
+# for network with the family node
+df_family <- save_input(vec_TF, stem.combined, df.merged, 
+vars, vars2, "wtfamily", "MIIC")
+equal_check(df_family, datasetA, "exp1")
+equal_check(df_family, datasetB, "exp3")
+# for network without the family node
+df_wo_family <- save_input(vec_TF[-1], stem.combined, df.merged%>% select(-c("family")), vars3, vars4, 'wofamily', "MIIC")
+equal_check(df_wo_family, datasetA, "exp1")
+equal_check(df_wo_family, datasetB, "exp3")
 
 ```

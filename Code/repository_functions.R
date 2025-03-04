@@ -193,7 +193,7 @@ cosine_distance <- function(first_vector, second_vector) {
 compute_md_cosine <- function(combinations, which_slot='counts') {
   dist_family <- c()
   for (num_cells in 1:dim(combinations)[2]) {
-    print(num_cells)
+    #print(num_cells)
     if (which_slot == 'data') {
       vectorA <-
         stem.combined@assays$RNA@data[, combinations[1, num_cells]]
@@ -214,13 +214,13 @@ compute_md_cosine <- function(combinations, which_slot='counts') {
 
 # Add distance to the metadata
 add_distance_metadata <- function(name_file, file_tosave, md_df_cosine){
-  dataset <- read.csv(sprintf("data\\%s.csv", name_file), header=T)
+  dataset <- read.csv(name_file, header=T)
   dataset$family[is.na(dataset$family)]= 'missing_family'
   dataset_tosave <- merge(dataset, md_df_cosine, by='family') %>% select(union(colnames(dataset), "distance"))
   new_order <- match(dataset_tosave$X, dataset$X)
   dataset_tosave <- dataset_tosave[order(new_order),]
   dataset_tosave$family[(dataset_tosave$family)=='missing_family']= NA
-  write.csv(dataset_tosave ,sprintf("data\\%s.csv", file_tosave), row.names=FALSE)
+  write.csv(dataset_tosave, file_tosave, row.names=FALSE)
 }
 
 
@@ -322,7 +322,7 @@ compute_homogeneity <- function(df_family)
   colnames(df) <- columns
   for (i  in(1: length(true_name_families))){
     name_fam<- true_name_families[i]
-    print(name_fam)
+    #print(name_fam)
     df[i, "family"] <- name_fam
     # exclude NAs?
     #celltypes_per_family <- celltypes_per_family[!is.na(celltypes_per_family$predicted.celltype),]
@@ -332,9 +332,9 @@ compute_homogeneity <- function(df_family)
     #browser()
     # denominator: number of cells for the whole family
     df[i, "homogeneity"] <- max(num_hom)/sum(smatrix$n)
-    print(df[i, "homogeneity"])
+    #print(df[i, "homogeneity"])
     df[i, "n_celltypes"] <- length(num_hom)
-    print(df[i, "n_celltypes"])
+    #print(df[i, "n_celltypes"])
   }
   #browser()
   df[is.infinite(df$homogeneity), c("homogeneity")] <- NA

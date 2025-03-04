@@ -429,10 +429,10 @@ save_input <- function(my_TF, stem.combined, df.merged,
   identical(sort(supp_file_i[supp_file_i$group=='TF', ]$var_names), sort(union(vars2, my_TF)))
   
   # save file
-  write.csv(df_input, sprintf("filtering\\input_%s_%s.csv", n_try, flag_fam), row.names=FALSE)
-  write.csv(supp_file_i, sprintf("filtering\\input_%s_%s_supp.csv", n_try, flag_fam), row.names=FALSE)
+  write.csv(df_input, sprintf("../Output/input_%s_%s.csv", n_try, flag_fam), row.names=FALSE)
+  write.csv(supp_file_i, sprintf("../Output/input_%s_%s_supp.csv", n_try, flag_fam), row.names=FALSE)
   # layout
-  write.csv(df_layout, sprintf("filtering\\input_%s_%s_LAYOUT.csv", n_try, flag_fam), row.names=FALSE)
+  #write.csv(df_layout, sprintf("filtering\\input_%s_%s_LAYOUT.csv", n_try, flag_fam), row.names=FALSE)
   
   return(df_input)
 }
@@ -441,12 +441,12 @@ save_input <- function(my_TF, stem.combined, df.merged,
 #-------------------------------------------------------------------------------
 # seurat_load_tfs
 #-------------------------------------------------------------------------------
-seurat_load_tfs = function (tfs=NULL)
-{
-  if ( is.null (tfs) )
-    tfs = read.table ("./Data/TFs.tsv", sep="\t", header=T)
-  return (unlist (tfs[,1]) )
-}
+#seurat_load_tfs = function (tfs=NULL)
+#{
+#  if ( is.null (tfs) )
+#    tfs = read.table ("./Data/TFs.tsv", sep="\t", header=T)
+#  return (unlist (tfs[,1]) )
+#}
 
 #-------------------------------------------------------------------------------
 # seurat_dir
@@ -496,8 +496,8 @@ catn0 <- function  (...)
 seurat_mi_compute = function (mat, value_name, values=NULL, cell_types=NULL,
                               tfs=NULL, recompute=F, display=T, pipeline=F)
 {
-  if (is.null(tfs))
-    tfs = seurat_load_tfs (tfs)
+  #if (is.null(tfs))
+  #  tfs = seurat_load_tfs (tfs)
   normal_gene = F
   if ( is.null (values) )
   {
@@ -603,8 +603,8 @@ seurat_mi_compute = function (mat, value_name, values=NULL, cell_types=NULL,
     if (class(values) == 'data.frame'){
       values=as.vector(unlist(values))}
     df_loop$Metadata = values
-    miic_res = suppressMessages (miic (input_data=df_loop, state_order=df_st,
-                                       orientation=F, latent="no", n_threads=8) )
+    miic_res = suppressMessages(miic(input_data=df_loop, state_order=df_st,
+                                       orientation=F, latent="no", n_threads=8))
     miic_res = miic_res$all.edges.summary
     # miic_res = miic_res[,c("x","y","info_shifted")]
     rownames (miic_res) = NULL
@@ -645,7 +645,7 @@ filter_info <- function(df, th1, to_delete=NULL)
 }
 
 # check if the gene expression did not change from the original file
-prova_check <- function(df_hom, dataset1, num_exp)
+equal_check <- function(df_hom, dataset1, num_exp)
 {
   prova1 <- df_hom[df_hom$exp %in% num_exp, ]
   common_names1 <- intersect(colnames(prova1), dataset1$X)
@@ -660,7 +660,7 @@ prova_check <- function(df_hom, dataset1, num_exp)
   ordered <- b[order(new_order),]
   setequal(colnames(a), colnames(ordered))
   for (name_col in colnames(a)){
-    print(name_col)
+    #print(name_col)
     stopifnot(identical(as.numeric(a[, name_col]), 
                         as.numeric(ordered[, name_col])))
   }

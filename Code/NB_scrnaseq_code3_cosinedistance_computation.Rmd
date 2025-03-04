@@ -1,0 +1,116 @@
+---
+title: "Cosine distance computation"
+output: html_notebook
+---
+This notebook reports the computation of cosine distance.
+The MIIC network is obtained with the distances computed with the raw counts.
+The figures in the article are computed with the normalized counts.
+
+## Libraries and sources
+Load libraries
+```{r}
+#library(combinat)
+library(Seurat)
+library(matrixStats)
+library(tidyverse)
+library(plotly)
+library(pals)
+library(rstatix)
+```
+
+Set working directory and load routines 
+You can set your own path where the file is located, for example:  
+setwd("C:\\Users\\UserName\\Documents\\Transcriptomics")
+
+```{r}
+script_path <- rstudioapi::getActiveDocumentContext()$path 
+setwd(dirname(script_path))
+source("repository_functions.R")
+```
+
+
+## Parameters
+```{r}
+which_slot <- "data" # or "counts"
+max_y <- ifelse(which_slot == "data", 13, 10)
+max_x <- 6
+
+```
+
+## Load datasets
+Dataset A  
+```{r}
+output_A<-summary_load_v2("../Datasets/dataset1_raw_matrix.csv", "../Output/dataset1_metadata_step2.csv")
+datasetA<-output_A$obj
+datasetA_metadata<-output_A$nm_cells
+```
+
+Dataset B
+```{r}
+output_B<-summary_load_v2("../Datasets/dataset3_raw_matrix.csv", "../Output/dataset3_metadata_step2.csv")
+datasetB<-output_B$obj
+datasetB_metadata<-output_B$nm_cells
+```
+
+Create Seurat objects
+```{r}
+expA.realdata <-seurat_object_wt_metadata(datasetA, datasetA_metadata)
+expB.realdata <-seurat_object_wt_metadata(datasetB, datasetB_metadata)
+# Create merged Seurat object
+stem.combined <- merge(expA.realdata, y = expB.realdata, add.cell.ids = c("exp1", "exp3"), project = "StemCells")
+stem.combined$exp <- sub("_.*", "", rownames(stem.combined@meta.data))
+stem.combined@meta.data$family[is.na(stem.combined@meta.data$family)]= 'missing_family'
+```
+
+## Compute distances
+```{r}
+# normalize if needed
+if (which_slot=='data'){
+  stem.combined <- NormalizeData(stem.combined)}
+# find unique families
+unique_fam <- unique(stem.combined$family)
+# find cell types for each family
+df_types <- find_celltype_family(unique_fam, stem.combined)
+# find combinations
+my_comb <- find_comb(unique_fam, stem.combined)
+md_cosine <- c()
+for (idx_c in 1:length(my_comb)){
+  md_cosine[[names(my_comb)[idx_c]]] <- compute_md_cosine(my_comb[[idx_c]], which_slot)
+}
+md_df_cosine <- data.frame(t(data.frame(md_cosine)))
+colnames(md_df_cosine) <- "distance"
+md_df_cosine$family <-rownames(md_df_cosine)
+# count number of sequenced cells per family
+cts <- dplyr::count(stem.combined@meta.data, family)
+md_df_cosine <- (merge(md_df_cosine, cts,
+by='family') %>% select(c("distance", "family", "n")))
+md_df_cosine <- merge(md_df_cosine, df_types, by='family')
+```
+
+
+## Save files for MIIC analysis
+```{r}
+if (which_slot=='count'){
+add_distance_metadata("../Output/dataset1_metadata_step2.csv", "../Output/dataset1_metadata_final.csv", md_df_cosine)
+add_distance_metadata("../Output/dataset3_metadata_step2.csv",  "../Output/dataset3_metadata_final.csv", md_df_cosine)}
+```
+
+## Plot cosine distance for real families
+```{r}
+colors_family <- polychrome(30)
+#name_family <- sort(union(expA.realdata$family, expB.realdata$family))
+md_df_cosine[md_df_cosine$family=="missing_family","family"] <- "IIA9"
+labels <- sort(paste(md_df_cosine$family, " (", md_df_cosine$n, ")", sep=""))
+
+plot1 <- ggplot(md_df_cosine, aes(x=distance, fill=family, label=n, text=cell.fates)) + 
+geom_histogram(binwidth=0.05, color='white')+ 
+labs(title='Cosine distance: real families', fill='Family')+
+scale_x_continuous(limits=c(0,max_x)/10,breaks=seq(0,max_x)/10)+
+scale_y_continuous(limits=c(0,max_y), breaks=seq(0,max_y)) + scale_fill_manual(values=unname(colors_family), labels=labels)
+
+plot1
+ggplotly(plot1)
+```
+
+
+

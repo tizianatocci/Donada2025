@@ -6,6 +6,7 @@ The folder "Code" contains the code used for the analysis.\
 The folder "Datasets" contains the original data, which must be downloaded from *insert link*.\
 The folder "Output" contains the files obtained during the analysis, such as the MIIC input.\
 The folder "MIIC_summary" contains the file downloaded from the MIIC network to obtain the list of genes significantly associated with properties of interest.\
+The folder "List genes" contains the list of genes reported in the article, significantly associated with properties of interest.\
 The folder "References" contains the file needed to apply Azimuth, which must be downloaded from *insert link*.\
 The folder "Figures" contains the figures that the code will generate. These are the figures used in the original article.
 

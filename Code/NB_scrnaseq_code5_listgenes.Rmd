@@ -1,0 +1,78 @@
+---
+title: "Code for obtaining the list of genes"
+output: html_notebook
+---
+
+This notebook reports the steps to obtain automatically the list of genes from the MIIC networks. It finds the list of genes significantly associated with properties of interest. \
+Significantly associated: based on MUTUAL INFORMATION or MUTUAL INFORMATION shifted. 
+Properties of interest: predicted.celltype, family. \
+For each property of interest, a list with the names of genes associated and a matrix including the MI shared are reported. \
+The files have been downloaded from the "Download" tab of the MIIC Web server.
+It is possible as well to retrieve these genes by looking at the "Summary" tab of the MIIC Web servers. \
+Please refer to the article for more details. \
+
+
+## Libraries and sources
+Load libraries
+```{r}
+library(tidyverse) 
+```
+
+Set working directory and load routines
+You can set your own path where the file is located, for example: \
+setwd("C:\\Users\\UserName\\Documents\\Transcriptomics")
+```{r}
+script_path <- rstudioapi::getActiveDocumentContext()$path 
+setwd(dirname(script_path))
+source("repository_functions.R")
+```
+
+## Parameters
+```{r}
+thresh <- 0 # threshold on MI shifted for distance and family
+n_variables <- 3000 # maximum number of variables, it is set very high to be sure to pick all the genes
+thresh_pct <- 20 # threshold on MI for predicted cell type
+saving_folder <- "../List genes"
+
+```
+
+## Obtain list of genes
+### Network wo family
+For, distance the genes directly associated with distance (when family is removed, filtering based on MI shifted) are reported. The genes are ordered based on decreasing MI shifted.
+```{r}
+#  distance
+file_name <- "../MIIC_summary/MIIC_wofamily"
+filtering_var <-c("info_shifted")
+name_metadata <- c("T1", "avg_dT2", "avg_dT3", "max_var", "min_var",
+                   "predicted.celltype", "homogeneity", "Colony_size", "exp",
+                   "distance", "n_celltypes")
+features <-  "distance" # features <- name_metadata
+filter_and_write(file_name, filtering_var, thresh, 
+                   n_variables, name_metadata, features, saving_folder)
+```
+
+### Network wt family
+For family, all genes with direct links (filtering based on MI shifted) are reported and LIN28B as well, even if there is not a direct link. 
+CXCR4 is the list obtained automatically on shifted mutual information but it is not considered in the final list for the paper, as the information between family and this genes flows through a gene connected to predicted.celltype (FAM107B is the contributor between family and CXCR4, MPO is the contributor between family and FAM107B and predicted cell type is among the contributors between family and MPO). The genes are ordered based on decreasing MI shifted.\
+For predicted cell type, all genes are reported if the MI > 20. The genes are ordered based on decreasing MI.
+
+```{r}
+# family
+file_name <- "../MIIC_summary/MIIC_wtfamily"
+filtering_var <-c("info_shifted")
+name_metadata <-  c("T1", "avg_dT2", "avg_dT3", "max_var", "min_var",
+                    "predicted.celltype", "homogeneity", "Colony_size", "exp",
+                    "distance", "n_celltypes", "family")
+features <- "family" #name_metadata
+filter_and_write(file_name, filtering_var, thresh, 
+                 n_variables, name_metadata, features, saving_folder)
+
+# predicted.celltype
+filtering_var <-c("info")
+name_metadata <-  c("T1", "avg_dT2", "avg_dT3", "max_var", "min_var",
+                    "predicted.celltype", "homogeneity", "Colony_size", "exp",
+                    "distance", "n_celltypes", "family")
+features <- "predicted.celltype" #name_metadata
+filter_and_write(file_name, filtering_var, thresh_pct, 
+                 n_variables, name_metadata, features, saving_folder)
+```

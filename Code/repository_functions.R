@@ -232,7 +232,7 @@ create_random_families<-function(unique_fam, stem.combined,
   random_all_md <- c()
   i <- 1
   for (name_f in unique_fam){
-    print(name_f)
+    #print(name_f)
     # find size of family
     size_f <- cts[cts$family==name_f, "n"]
     # find names of cells inside family
@@ -278,6 +278,7 @@ obtain_random_families <- function(num_it,
   set.seed(m_seed)
   random_mixed_all <- data.frame()
   for (n_it in 1:num_it){
+    print(sprintf("Iteration %d/%d", n_it, num_it))
     random_mixed <- create_random_families(unique_fam, stem.combined, 
                                            flag_type, which_slot)
     random_mixed_all[1:30,n_it] <- random_mixed
@@ -297,7 +298,54 @@ obtain_random_plot <- function(random_mixed_wtrep,
     scale_y_continuous(limits=c(0,y_limit), breaks=seq(0,y_limit))
   return(plot_mixed_wtrep)}
 
+# Obtain all the plots for the iterations of random families
+obtain_plots_iteration <- function(random_mixed_all, random_type_all, 
+                                   weight_value, max_x, max_y){
+  # discarding cell type
+  random_mixed_wtrep <- data.frame(unlist(random_mixed_all))
+  colnames(random_mixed_wtrep) <- c("distance")
+  plot_mixed_wtrep <- obtain_random_plot(random_mixed_wtrep,
+  weight_value, max_x, max_y, "#B5EAB6", 'Random')
+  # mantaining cell type
+  random_type_wtrep <- data.frame(unlist(random_type_all))
+  colnames(random_type_wtrep) <- c("distance")
+  plot_type_wtrep <- obtain_random_plot(random_type_wtrep,
+  weight_value, max_x, max_y, "#DFCCF1", 'Random with same cell fate')
+  
+  return(list(random_mixed_wtrep = random_mixed_wtrep, random_type_wtrep = random_type_wtrep,
+              plot_mixed_wtrep=plot_mixed_wtrep, plot_type_wtrep=plot_type_wtrep)) 
+}
 
+# Plot distributions side by side
+plot_distibutions_side_by_side <- function(md_df_cosine, output_100it, n_reps=100, value_weight=0.01, max_x, max_y){
+  DF <- rbind(data.frame(fill=1, distance=rep(md_df_cosine$distance, n_reps)),
+              data.frame(fill=2, distance=output_100it$random_mixed_wtrep$distance),
+              data.frame(fill=3, distance=output_100it$random_type_wtrep$distance))
+  DF$fill <- as.factor(DF$fill)
+  h <- ggplot(DF, aes(x=distance, fill=fill, weights=value_weight)) +
+    geom_histogram(binwidth=0.05, colour="white", 
+                   position="dodge")+
+    scale_x_continuous(limits=c(0,max_x*10, 5)*value_weight, breaks=seq(0,max_x*10,5)*value_weight)+
+    scale_y_continuous(limits=c(0,max_y), breaks=seq(0,max_y)) + 
+    geom_vline(xintercept=-0.025, col='#3B3B3B', linetype="dashed", size=1) +
+    geom_vline(xintercept=0.025, col='#3B3B3B', linetype="dashed", size=1) +
+    geom_vline(xintercept=0.075, col='#3B3B3B', linetype="dashed", size=1) +
+    geom_vline(xintercept=0.125, col='#3B3B3B', linetype="dashed", size=1) + 
+    geom_vline(xintercept=0.175, col='#3B3B3B', linetype="dashed", size=1) +
+    geom_vline(xintercept=0.225, col='#3B3B3B', linetype="dashed", size=1) +
+    geom_vline(xintercept=0.275, col='#3B3B3B', linetype="dashed", size=1) +
+    geom_vline(xintercept=0.325, col='#3B3B3B', linetype="dashed", size=1) +
+    geom_vline(xintercept=0.375, col='#3B3B3B', linetype="dashed", size=1) +
+    geom_vline(xintercept=0.425, col='#3B3B3B', linetype="dashed", size=1) +
+    geom_vline(xintercept=0.475, col='#3B3B3B', linetype="dashed", size=1) +
+    geom_vline(xintercept=0.525, col='#3B3B3B', linetype="dashed", size=1) +
+    geom_vline(xintercept=0.575, col='#3B3B3B', linetype="dashed", size=1) +
+    geom_vline(xintercept=0.625, col='#3B3B3B', linetype="dashed", size=1)
+  h + theme_classic() +  
+    scale_fill_manual(values=c("#FFB8B1","#B5EAB6","#DFCCF1"), 
+                      name='Families', labels=c('Real', 'Random', 'Random, same fate')) 
+  return(h)
+}
 
 #===============================================================================
 # Routines specific for the file: "featureselection.R"
@@ -711,7 +759,7 @@ filter_and_write<-function(file_name, filtering_var, thresh, n_variables, name_m
 {
   # load summary
   summary_MIIC <- read.table(
-    sprintf("MIIC_summary\\%s\\edgesList.miic.summary.txt", file_name),
+    sprintf("%s\\edgesList.miic.summary.txt", file_name),
     sep='\t',
     header=TRUE)
   # order df based on increasing mutual information
@@ -730,16 +778,16 @@ filter_and_write<-function(file_name, filtering_var, thresh, n_variables, name_m
   # print everything in folder
   i <- 1
   for (element in total_list){
-    print(i)
+    #print(i)
     current_name <- features[i]
-    print(current_name)
+    print(sprintf("Writing files for: %s in the 'List_genes folder'", current_name))
     names_write <- setdiff(element$name_vars, name_metadata)
     tofilter_submatrix <- element$submatrix
     filt_submatrix <- tofilter_submatrix %>% select(c("x", "y", "type", "ai", "info", "Nxy_ai", "info_shifted", "partial_correlation"))
     write(names_write, 
-          file = file.path("list genes", correct_folder,sprintf("names_%s.txt", current_name)), sep = "")
+          file = file.path(correct_folder,sprintf("names_%s.txt", current_name)), sep = "")
     write.csv(filt_submatrix, 
-              file = file.path("list genes", correct_folder, sprintf("matrix_%s.csv", current_name)))
+              file = file.path(correct_folder, sprintf("matrix_%s.csv", current_name)))
     i <- i+1
   }
 }

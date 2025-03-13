@@ -347,6 +347,35 @@ plot_distibutions_side_by_side <- function(md_df_cosine, output_100it, n_reps=10
   return(h)
 }
 
+# Wilcox test
+create_wilcox_tests <- function(md_df_cosine, col_name, n_families=30, n_rep=10, flag_exact=TRUE,...) {
+  outputs <- list(...)
+  result <- list()
+
+  # Loop over the list of inputs
+  for (i in seq_along(outputs)) {
+    output_name <- paste0("wt_", n_rep^i)
+    
+    # Check if the output object exists and create the corresponding Wilcoxon test
+    if (!is.null(outputs[[i]])) {
+      result[[output_name]] <- wilcox.test(md_df_cosine$distance, outputs[[i]][[col_name]]$distance, exact = flag_exact)
+    }
+  }
+  
+  # Return the list of results
+  return(result)
+}
+
+# option n2 for library
+create_wilcox_tests_v2 <- function(md_df_cosine, output, flag_exact=T, adj_method="bonferroni"){
+df_all <- rbind(data.frame(group="real", distance=md_df_cosine$distance),
+                data.frame(group="random", distance=output$random_mixed_wtrep$distance),
+                data.frame(group="random, same type", distance=output$random_type_wtrep$distance))
+results <- df_all %>% wilcox_test(distance ~ group, 
+                                      exact = flag_exact, p.adjust.method = adj_method)
+return(results)
+}
+
 #===============================================================================
 # Routines specific for the file: "featureselection.R"
 #===============================================================================

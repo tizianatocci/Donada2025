@@ -373,3 +373,45 @@ ggsave(family_dtB,
        height = 6, width = 6.5, units = "in")
 ```
 
+##Times of division
+```{r}
+colonysize_dtA <-DimPlot(expA.realdata, group.by=c("Colony_size"),
+reduction = 'umap_expA_sct', pt.size=3, order=T, cols=cols_dt1) + labs(title="Dataset A") + default_theme
+colonysize_dtA
+
+colonysize_dtB <-DimPlot(expB.realdata, group.by=c("Colony_size"),
+reduction = 'umap_expB_sct', pt.size=3, order=T, cols=cols_dt1) + labs(title="Dataset A") + default_theme
+colonysize_dtB
+
+
+```
+
+Mean and variance 
+```{r}
+plot_mean_var_colonysize<- function(exp.realdata){
+cs_dT <- list()
+names_celltype <-unique(exp.realdata@meta.data$predicted.celltype)
+for (celltype in names_celltype) {
+  print(celltype)
+  cs_times <- exp.realdata@meta.data[exp.realdata@meta.data$predicted.celltype==celltype,]$Colony_size
+  cs_mean <- mean(cs_times, na.rm=TRUE)
+  cs_var <- var(cs_times, na.rm=TRUE)
+  output_list <- list("mean"=cs_mean, "var"=cs_var)
+  cs_dT[[celltype]] <- output_list
+}
+cs_df <- data.frame(do.call(rbind, cs_dT))
+cs_df$mean <- as.numeric(cs_df$mean)
+cs_df$var <- as.numeric(cs_df$var)
+ggplot(cs_df, aes(x=mean, y=var)) +
+  geom_point() + 
+  geom_text(label=rownames(cs_df)) +
+  xlim(0, max(cs_df$mean))+
+  ylim(0, max(cs_df$var))
+}
+
+
+plot_mean_var_colonysize(expA.realdata)
+plot_mean_var_colonysize(expB.realdata)
+```
+
+

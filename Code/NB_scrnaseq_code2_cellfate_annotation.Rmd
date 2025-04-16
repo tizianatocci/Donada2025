@@ -373,6 +373,57 @@ ggsave(family_dtB,
        height = 6, width = 6.5, units = "in")
 ```
 
+## Violin plots for genes associated to families
+```{r}
+genes_to_plot <- c("CD84", "STAB1", "IGF2BP1", "IGLL1", "C1QTNF4", "SMIM24", "PRSS21",
+"S100A9", "PAX8-AS1", "PSME2P6", "TRBC2", "CLEC11A", "CD36", "LAMB2")
+
+vp_dtA<- VlnPlot(expA.realdata,  genes_to_plot,  stack = F, sort = F,
+group.by = "family", combine=F, cols=cols_dt1) 
+
+vp_dtA_labeled <- lapply(vp_dtA, function(p) {
+  apply_theme(p) +
+  labs(x = "Family") + theme(legend.position = "none", axis.text = element_text(size = 20))  
+})
+
+vp_dtB<- VlnPlot(expB.realdata,  genes_to_plot,  stack = F, sort = F,
+group.by = "family", combine=F, cols=cols_dt2) 
+
+vp_dtB_labeled <- lapply(vp_dtB, function(p) {
+  apply_theme(p) +
+  labs(x = "Family") + theme(legend.position = "none", axis.text = element_text(size = 20))  
+})
+
+#vp_dtA_labeled
+```
+
+Save figures 
+```{r}
+for (i in seq_along(vp_dtA_labeled)) {
+  gene_name <- genes_to_plot[i]
+  ggsave(
+    filename = paste0("../Figures/Fig_violin_datasetA_", gene_name, ".svg"),
+    plot = vp_dtA_labeled[[i]],
+    device = "svg",
+    height = 6,
+    width = 6.5,
+    units = "in"
+  )
+}
+
+for (i in seq_along(vp_dtB_labeled)) {
+  gene_name <- genes_to_plot[i]
+  ggsave(
+    filename = paste0("../Figures/Fig_violin_datasetB_", gene_name, ".svg"),
+    plot = vp_dtB_labeled[[i]],
+    device = "svg",
+    height = 6,
+    width = 6.5,
+    units = "in"
+  )
+}
+```
+
 ##Times of division
 ```{r}
 colonysize_dtA <-DimPlot(expA.realdata, group.by=c("Colony_size"),

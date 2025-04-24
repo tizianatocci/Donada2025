@@ -424,14 +424,14 @@ for (i in seq_along(vp_dtB_labeled)) {
 }
 ```
 
-##Times of division
+##Colony size
 ```{r}
 colonysize_dtA <-DimPlot(expA.realdata, group.by=c("Colony_size"),
 reduction = 'umap_expA_sct', pt.size=3, order=T, cols=cols_dt1) + labs(title="Dataset A") + default_theme
 colonysize_dtA
 
 colonysize_dtB <-DimPlot(expB.realdata, group.by=c("Colony_size"),
-reduction = 'umap_expB_sct', pt.size=3, order=T, cols=cols_dt1) + labs(title="Dataset A") + default_theme
+reduction = 'umap_expB_sct', pt.size=3, order=T, cols=cols_dt2) + labs(title="Dataset B") + default_theme
 colonysize_dtB
 
 
@@ -465,4 +465,56 @@ plot_mean_var_colonysize(expA.realdata)
 plot_mean_var_colonysize(expB.realdata)
 ```
 
+##Times of division
+```{r}
+expA.realdata$T1 <- as.numeric(as.character(expA.realdata$T1))
+expA.realdata$avg_dT2 <- as.numeric(as.character(expA.realdata$avg_dT2))
+expA.realdata$avg_dT3 <- as.numeric(as.character(expA.realdata$avg_dT3))
 
+T1_dtA <- FeaturePlot(expA.realdata, features = "T1", reduction = "umap_expA_sct", pt.size = 3) + labs(title = "Dataset A", color = "T1") + default_theme + theme(legend.text = element_text(size = 18))
+T1_dtA
+T2_dtA <- FeaturePlot(expA.realdata, features = "avg_dT2", reduction = "umap_expA_sct", pt.size = 3) + labs(title = "Dataset A", color = "avg_dT2") + default_theme + theme(legend.text = element_text(size = 18))
+T2_dtA
+T3_dtA <- FeaturePlot(expA.realdata, features = "avg_dT3", reduction = "umap_expA_sct", pt.size = 3) + labs(title = "Dataset A", color = "avg_dT3") + default_theme + theme(legend.text = element_text(size = 18))
+T3_dtA
+
+
+expB.realdata$T1 <- as.numeric(as.character(expB.realdata$T1))
+expB.realdata$avg_dT2 <- as.numeric(as.character(expB.realdata$avg_dT2))
+expB.realdata$avg_dT3 <- as.numeric(as.character(expB.realdata$avg_dT3))
+
+T1_dtB <- FeaturePlot(expB.realdata, features = "T1", reduction = "umap_expB_sct", pt.size = 3) + labs(title = "Dataset B", color = "T1") + default_theme + theme(legend.text = element_text(size = 18))
+T1_dtB
+T2_dtB <- FeaturePlot(expB.realdata, features = "avg_dT2", reduction = "umap_expB_sct", pt.size = 3) + labs(title = "Dataset B", color = "avg_dT2") + default_theme + theme(legend.text = element_text(size = 18))
+T2_dtB
+T3_dtB <- FeaturePlot(expB.realdata, features = "avg_dT3", reduction = "umap_expB_sct", pt.size = 3) + labs(title = "Dataset B", color = "avg_dT3") + default_theme + theme(legend.text = element_text(size = 18))
+T3_dtB
+
+```
+Save figures
+```{r}
+ggsave(T1_dtA, 
+       filename = "../Figures/Fig_T1_datasetA.svg",
+       device = "svg",
+       height = 6, width = 6.5, units = "in")
+ggsave(T2_dtA, 
+       filename = "../Figures/Fig_avgdT2_datasetA.svg",
+       device = "svg",
+       height = 6, width = 6.5, units = "in")
+ggsave(T3_dtA, 
+       filename = "../Figures/Fig_avgdT3_datasetA.svg",
+       device = "svg",
+       height = 6, width = 6.5, units = "in")
+ggsave(T1_dtB, 
+       filename = "../Figures/Fig_T1_datasetB.svg",
+       device = "svg",
+       height = 6, width = 6.5, units = "in")
+ggsave(T2_dtB, 
+       filename = "../Figures/Fig_avgdT2_datasetB.svg",
+       device = "svg",
+       height = 6, width = 6.5, units = "in")
+ggsave(T3_dtB, 
+       filename = "../Figures/Fig_avgdT3_datasetB.svg",
+       device = "svg",
+       height = 6, width = 6.5, units = "in")
+```

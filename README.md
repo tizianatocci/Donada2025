@@ -1,13 +1,13 @@
 # Transcriptomic analysis
-This repository contains the codes used for the article "Clonal memory of cell division in human healthy hematopoiesis and Acute Myeloid Leukemia".\
-Article's authors: Donada A, Hermange G, Tocci T, Midoun A, Prevedello G, Hadj Abed L, Dupré D, Sun W, Milo I, Tenreira Bento S, Pospori C, Willekens C, Vargaftig J, Michonneau D, Lo Celso C, Servant N, Duffy K, Isambert H, Cournède PH, Laplane L and Perié L
+This repository contains the codes used for the article "Clonal memory of cell division diverges between human healthy haematopoiesis and acute myeloid leukaemia".\
+Article's authors: Alessandro Donada; Gurvan Hermange; Tiziana Tocci; Adil Midoun; Giulio Prevedello; Louisa Hadj Abed; Delia Dupré; Wenjie Sun; Idan Milo; Sabrina Tenreira Bento; Costandina Pospori; Andrew Innes; Christophe Willekens; Jacques Vargaftig; David Michonneau; Cristina Lo Celso; Nicolas Servant; Ken R Duffy; Hervé Isambert; Paul-Henri Cournede; Lucie Laplane; Leila Perié
 
 The folder "Code" contains the code used for the analysis.\
-The folder "Datasets" contains the original data, which must be downloaded from *insert link*.\
+The folder "Datasets" contains the original data.\
 The folder "Output" contains the files obtained during the analysis, such as the MIIC input.\
 The folder "MIIC_summary" contains the file downloaded from the MIIC network to obtain the list of genes significantly associated with properties of interest.\
 The folder "List genes" contains the list of genes reported in the article, significantly associated with properties of interest.\
-The folder "References" contains the file needed to apply Azimuth, which must be downloaded from *insert link*.\
+The folder "References" contains the file needed to apply Azimuth.\
 The folder "Figures" contains the figures that the code will generate. These are the figures used in the original article.
 
 The analysis is divided in five steps, for each of them a code is available to replicate the results of the article:
@@ -28,4 +28,3 @@ install.packages("Seurat")\
 install.packages("tidyverse")\
 install.packages("matrixStats")\
 install.packages("miic")
-… Work in progress 

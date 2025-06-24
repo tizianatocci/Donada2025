@@ -5,7 +5,6 @@ Article's authors: Alessandro Donada; Gurvan Hermange; Tiziana Tocci; Adil Midou
 The folder "Code" contains the code used for the analysis.\
 The folder "Datasets" contains the original data.\
 The folder "Output" contains the files obtained during the analysis, such as the MIIC input.\
-The folder "MIIC_summary" contains the file downloaded from the MIIC network to obtain the list of genes significantly associated with properties of interest.\
 
 The analysis is divided in four steps, for each of them a code is available to replicate the results of the article:
 1. Azimuth annotation 

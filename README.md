@@ -13,7 +13,7 @@ The analysis is divided in three steps, for each of them a code is available to 
 2. Cosine distance computation and obtain figures concerning the cosine distance analysis
 3. Run feature selection for MIIC 
 
-After point 4, the MIIC network is obtained with the [MIIC server](https://miic.curie.fr/)\
+After point 3, the MIIC network is obtained with the [MIIC server](https://miic.curie.fr/)\
 Each code returns intermediate files, stored in the "Output" folder. The files are already present in the "Output" folder in case you want to replicate only one part of the analysis.
 
 R Version used: 4.3.2

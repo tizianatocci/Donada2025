@@ -4,7 +4,7 @@ Article's authors: Alessandro Donada; Gurvan Hermange; Tiziana Tocci; Adil Midou
 
 The folder "Code" contains the code used for the analysis.\
 The folder "Datasets" contains the original data.\
-The folder "Output" contains the files obtained during the analysis, such as the MIIC input.\
+The folder "Output" contains the files obtained during the analysis, such as the MIIC input.
 
 The analysis is divided in four steps, for each of them a code is available to replicate the results of the article:
 1. Azimuth annotation 
@@ -17,7 +17,7 @@ Each code returns intermediate files, stored in the "Output" folder. The files a
 
 R Version used: 4.3.2
 
-📦 R Packages Used
+📦 R Packages Used \
 This project relies on the following R packages. The specific versions listed were used during the analysis to ensure reproducibility.
 
 | Package       | Version        |

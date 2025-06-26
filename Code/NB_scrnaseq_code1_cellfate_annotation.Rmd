@@ -1,0 +1,384 @@
+---
+title: "Code for cell fate annotation"
+output: html_notebook
+---
+This notebook reports the steps to annotate the cells for Dataset A and B for the article and to obtain the related figures for what concerns:   
+- the UMAP of the two datasets with the annotation and corresponding marker genes;   
+- the UMAP of the two datasets with the family label;  
+- the UMAP of the two datasets with the times of division.  
+
+Please refer to the article for more details.
+
+## Libraries and sources
+Load libraries
+```{r}
+library(tidyverse)
+library(Seurat)
+library(matrixStats)
+library(pals)
+library(patchwork)
+```
+
+Set working directory and load routines 
+You can set your own path where the file is located, for example:  
+setwd("C:\\Users\\UserName\\Documents\\Transcriptomics")
+
+```{r}
+script_path <- rstudioapi::getActiveDocumentContext()$path 
+setwd(dirname(script_path))
+source("repository_functions.R")
+```
+
+## Parameters
+Clustering parameters
+```{r}
+ndims <- 30 
+n_neigh <- 15 
+k_param <- 8 
+min_dist <- 0.3
+res_1 <- 0.6
+res_2 <- 1
+res_3 <- 0.4
+```
+
+Plotting parameters 
+```{r}
+colors_fourclusters <- c("#0047AB", "#7CAE00", "#40E0D0", "#C70039")
+
+# theme for saving figures 
+default_theme <- theme(plot.title = element_text(hjust =0.5, size=26), axis.line = element_line(size = 2),axis.text = element_text(size = 24),axis.title = element_text(size = 26),legend.text = element_text(size = 22))
+
+```
+Assign the nomenclature to use in the figures
+```{r}
+U_name <- "CD34+CD38-/HPC" # MPP/HPC
+M_name <- "MyP" # Myeloid Progenitor
+EM_name <- "EryP/MkP" # ErythroMegakaryocytes Progenitor
+G_name <- "GraP" # Granulocytic progenitor
+nomenclature_levels <- c("CD34+CD38-/HPC", "MyP", "GraP", "EryP/MkP")
+
+# gene expression markers
+gene_markers <- c("MPO", "ELANE", "AZU1", "ITGA2B", "HBB") 
+```
+
+
+## Load datasets
+Load datasetA
+```{r}
+output_A<-summary_load_v2("../Datasets/dataset1_raw_matrix.csv", 
+                          "../Datasets/dataset1_metadata_input.csv")
+datasetA<-output_A$obj
+datasetA_metadata<-output_A$nm_cells
+```
+
+Load datasetB
+```{r}
+output_B<-summary_load_v2("../Datasets/dataset3_raw_matrix.csv", 
+                          "../Datasets/dataset3_metadata_input.csv")
+datasetB<-output_B$obj
+datasetB_metadata<-output_B$nm_cell
+```
+
+Create Seurat objects
+```{r}
+expA.realdata <-seurat_object_wt_metadata(datasetA, datasetA_metadata)
+expB.realdata <-seurat_object_wt_metadata(datasetB, datasetB_metadata)
+```
+
+
+## Clustering
+SCT normalization
+Obtain cluster with two different resolutions.
+DatasetA 
+```{r}
+expA.realdata <- run_clustering(expA.realdata, ndims, 
+n_neigh, k_param, min_dist, res_1, res_2, reduction_name_pca = 'pca_expA_sct', reduction_name_umap='umap_expA_sct')
+
+```
+
+DatasetB 
+```{r}
+expB.realdata <- run_clustering(expB.realdata, ndims, 
+n_neigh, k_param, min_dist, res_3, res_2, reduction_name_pca = 'pca_expB_sct',reduction_name_umap='umap_expB_sct')
+
+```
+
+### Three groups clustering
+Assign name to clusters
+This annotation is based on marker genes. Please refer to the section "Marker genes".  
+DatasetA
+```{r}
+expA.realdata$predicted.celltype <- NA
+expA.realdata$predicted.celltype <- ifelse(expA.realdata$SCT_snn_res.1 == 2, M_name, expA.realdata$predicted.celltype)
+expA.realdata$predicted.celltype <- ifelse(expA.realdata$SCT_snn_res.1 == 1, EM_name, expA.realdata$predicted.celltype)
+expA.realdata$predicted.celltype <- ifelse(expA.realdata$SCT_snn_res.1 == 0, U_name, expA.realdata$predicted.celltype)
+Idents(expA.realdata) <- expA.realdata$predicted.celltype
+expA.realdata$cn <- rownames(expA.realdata@meta.data)
+
+```
+
+DatasetB 
+```{r}
+expB.realdata$predicted.celltype <- NA
+expB.realdata$predicted.celltype <- ifelse(expB.realdata$SCT_snn_res.1 == 1, M_name, expB.realdata$predicted.celltype)
+expB.realdata$predicted.celltype <- ifelse(expB.realdata$SCT_snn_res.1 == 2, EM_name, expB.realdata$predicted.celltype)
+expB.realdata$predicted.celltype <- ifelse(expB.realdata$SCT_snn_res.1 == 0, U_name, expB.realdata$predicted.celltype)
+Idents(expB.realdata) <- expB.realdata$predicted.celltype
+expB.realdata$cn <- rownames(expB.realdata@meta.data)
+
+```
+
+
+### Four groups clustering
+DatasetA 
+``` {r}
+output_elane_dtA <- find_elane(expA.realdata, "RNA", 0)
+ELANE_dtA <- output_elane_dtA$elane_cells
+expA.realdata$predicted.celltype <- ifelse(expA.realdata$cn %in% ELANE_dtA, G_name, expA.realdata$predicted.celltype)
+Idents(expA.realdata) <- expA.realdata$predicted.celltype
+Idents(expA.realdata) <- ordered(Idents(expA.realdata), levels=nomenclature_levels)
+
+plotC<-DimPlot(expA.realdata, reduction='umap_expA_sct', cols=colors_fourclusters, pt.size=3, order=T) + ggtitle("Dataset A") + default_theme
+  
+``` 
+
+DatasetB 
+``` {r}
+output_elane_dtB <- find_elane(expB.realdata, "RNA", 0)
+ELANE_dtB <- output_elane_dtB$elane_cells
+expB.realdata$predicted.celltype <- ifelse(expB.realdata$cn %in% ELANE_dtB, G_name, expB.realdata$predicted.celltype)
+Idents(expB.realdata) <- expB.realdata$predicted.celltype
+Idents(expB.realdata) <- ordered(Idents(expB.realdata), levels=nomenclature_levels)
+
+plotD<-DimPlot(expB.realdata, cols=colors_fourclusters, reduction='umap_expB_sct', pt.size=3, order=T) + ggtitle("Dataset B") + default_theme
+```
+
+Plots
+``` {r}
+plotC
+plotD
+#plotC|plotD
+```
+
+Save images
+``` {r}
+ggsave(plotC, 
+       filename = "../Figures/Fig_UMAP_datasetA.svg",
+       device = "svg",
+       height = 6, width = 8, units = "in")
+ggsave(plotD, 
+       filename = "../Figures/Fig_UMAP_datasetB.svg",
+       device = "svg",
+       height = 6, width = 8, units = "in")
+```
+
+Assign new metadata with four groups clustering annotation to run MIIC
+``` {r}
+stopifnot(identical(colnames(datasetA_metadata), colnames(datasetB_metadata)))
+
+vars_tosave <- datasetA_metadata %>% 
+  colnames %>% union("predicted.celltype")
+
+vars_tosave <- union("X", vars_tosave)
+expA.realdata$X <- rownames(expA.realdata@meta.data)
+expB.realdata$X <- rownames(expB.realdata@meta.data)
+datasetA_metadata_cluster_ann <- expA.realdata@meta.data[, vars_tosave]
+datasetB_metadata_cluster_ann <- expB.realdata@meta.data[, vars_tosave]
+
+``` 
+
+Save files
+``` {r}
+write.csv(datasetA_metadata_cluster_ann,sprintf("../Output/dataset1_metadata_step1.csv"), row.names=FALSE)
+write.csv(datasetB_metadata_cluster_ann,sprintf("../Output/dataset3_metadata_step1.csv"), row.names=FALSE)
+``` 
+
+
+## Markers genes
+For plotting, the log-normalized RNA counts are shown. 
+``` {r}
+DefaultAssay(expA.realdata) <- "RNA"
+expA.realdata <- NormalizeData(expA.realdata)
+DefaultAssay(expB.realdata) <- "RNA"
+expB.realdata <- NormalizeData(expB.realdata)
+```
+
+Feature plots
+``` {r}
+apply_theme <- function(p) {
+  p + theme(
+    plot.title = element_text(hjust = 0.5, face = "bold",   size =26),
+    axis.line = element_line(size = 2),
+    axis.text = element_text(size = 24),
+    axis.title = element_text(size = 26),
+    legend.text = element_text(size = 16))
+}
+
+fp_dtA <- FeaturePlot(expA.realdata, gene_markers, combine=FALSE)
+customized_plots_dtA <- lapply(fp_dtA, apply_theme)
+fp_dtA <- wrap_plots(customized_plots_dtA, nrow=3, ncol=2) +
+  plot_annotation(title = "Dataset A", theme = theme(plot.title = element_text(hjust = 0.5, face='bold',size = 26)))
+
+fp_dtB<- FeaturePlot(expB.realdata, gene_markers,
+combine=FALSE)
+customized_plots_dtB <- lapply(fp_dtB, apply_theme)
+fp_dtB <- wrap_plots(customized_plots_dtB, nrow=2, ncol=2) +
+  plot_annotation(title = "Dataset B", theme = theme(plot.title = element_text(hjust = 0.5, face='bold',size = 26)))
+
+fp_dtA
+fp_dtB
+
+```
+
+Save figures
+```{r}
+ggsave(fp_dtA, 
+       filename = "../Figures/Fig_genes_datasetA.svg",
+       device = "svg",
+       height = 9, width = 8, units = "in")
+ggsave(fp_dtB, 
+       filename = "../Figures/Fig_genes_datasetB.svg",
+       device = "svg",
+       height = 6, width = 8, units = "in")
+```
+
+
+## Clustering with family label
+```{r}
+if (!"IIA9" %in% expB.realdata$family)
+{expB.realdata@meta.data[expB.realdata$family %in% NA,]$family <- "IIA9"}
+colors_family <- polychrome(30)
+family_names <- sort(union(expA.realdata$family, expB.realdata$family))
+df_cols <- data.frame(cbind(family_names, colors_family))
+cols_dt1 <- df_cols[grepl("_", df_cols$family_names),"colors_family"]
+cols_dt2 <- setdiff(unname(colors_family), cols_dt1)
+
+family_dtA <-DimPlot(expA.realdata, group.by=c("family"),
+reduction = 'umap_expA_sct', pt.size=3, order=T, cols=cols_dt1) + labs(title="Dataset A") + default_theme
+
+family_dtA
+
+family_dtB <-DimPlot(expB.realdata, group.by=c("family"), reduction = 'umap_expB_sct', pt.size=3, order=T, cols= cols_dt2) +  labs(title="Dataset B") + default_theme
+
+family_dtB
+```
+
+Save figures
+```{r}
+ggsave(family_dtA, 
+       filename = "../Figures/Fig_familyUMAP_datasetA.svg",
+       device = "svg",
+       height = 6, width = 6.5, units = "in")
+ggsave(family_dtB, 
+       filename = "../Figures/Fig_familyUMAP_datasetB.svg",
+       device = "svg",
+       height = 6, width = 6.5, units = "in")
+```
+
+
+## Violin plots for genes associated to families
+```{r}
+genes_to_plot <- c("CD84", "STAB1", "IGF2BP1", "IGLL1", "C1QTNF4", "SMIM24", "PRSS21",
+"S100A9", "PAX8-AS1", "PSME2P6", "TRBC2", "CLEC11A", "CD36", "LAMB2")
+
+vp_dtA<- VlnPlot(expA.realdata,  genes_to_plot,  stack = F, sort = F,
+group.by = "family", combine=F, cols=cols_dt1) 
+
+vp_dtA_labeled <- lapply(vp_dtA, function(p) {
+  apply_theme(p) +
+  labs(x = "Family") + theme(legend.position = "none", axis.text = element_text(size = 20))  
+})
+
+vp_dtB<- VlnPlot(expB.realdata,  genes_to_plot,  stack = F, sort = F,
+group.by = "family", combine=F, cols=cols_dt2) 
+
+vp_dtB_labeled <- lapply(vp_dtB, function(p) {
+  apply_theme(p) +
+  labs(x = "Family") + theme(legend.position = "none", axis.text = element_text(size = 20))  
+})
+
+#vp_dtA_labeled
+```
+
+Save figures 
+```{r}
+for (i in seq_along(vp_dtA_labeled)) {
+  gene_name <- genes_to_plot[i]
+  ggsave(
+    filename = paste0("../Figures/Fig_violin_datasetA_", gene_name, ".svg"),
+    plot = vp_dtA_labeled[[i]],
+    device = "svg",
+    height = 6,
+    width = 6.5,
+    units = "in"
+  )
+}
+
+for (i in seq_along(vp_dtB_labeled)) {
+  gene_name <- genes_to_plot[i]
+  ggsave(
+    filename = paste0("../Figures/Fig_violin_datasetB_", gene_name, ".svg"),
+    plot = vp_dtB_labeled[[i]],
+    device = "svg",
+    height = 6,
+    width = 6.5,
+    units = "in"
+  )
+}
+```
+
+
+##Times of division
+```{r}
+font_size_legend <- 16
+expA.realdata$T1 <- as.numeric(as.character(expA.realdata$T1))
+expA.realdata$avg_dT2 <- as.numeric(as.character(expA.realdata$avg_dT2))
+expA.realdata$avg_dT3 <- as.numeric(as.character(expA.realdata$avg_dT3))
+
+T1_dtA <- FeaturePlot(expA.realdata, features = "T1", reduction = "umap_expA_sct", pt.size = 3) + labs(title = "Dataset A", color = "T1") + default_theme + theme(legend.text = element_text(size = font_size_legend))
+T1_dtA
+T2_dtA <- FeaturePlot(expA.realdata, features = "avg_dT2", reduction = "umap_expA_sct", pt.size = 3) + labs(title = "Dataset A", color = "avg_dT2") + default_theme + theme(legend.text = element_text(size = font_size_legend))
+T2_dtA
+T3_dtA <- FeaturePlot(expA.realdata, features = "avg_dT3", reduction = "umap_expA_sct", pt.size = 3) + labs(title = "Dataset A", color = "avg_dT3") + default_theme + theme(legend.text = element_text(size = font_size_legend))
+T3_dtA
+
+
+expB.realdata$T1 <- as.numeric(as.character(expB.realdata$T1))
+expB.realdata$avg_dT2 <- as.numeric(as.character(expB.realdata$avg_dT2))
+expB.realdata$avg_dT3 <- as.numeric(as.character(expB.realdata$avg_dT3))
+
+T1_dtB <- FeaturePlot(expB.realdata, features = "T1", reduction = "umap_expB_sct", pt.size = 3) + labs(title = "Dataset B", color = "T1") + default_theme + theme(legend.text = element_text(size = font_size_legend))
+T1_dtB
+T2_dtB <- FeaturePlot(expB.realdata, features = "avg_dT2", reduction = "umap_expB_sct", pt.size = 3) + labs(title = "Dataset B", color = "avg_dT2") + default_theme + theme(legend.text = element_text(size = font_size_legend))
+T2_dtB
+T3_dtB <- FeaturePlot(expB.realdata, features = "avg_dT3", reduction = "umap_expB_sct", pt.size = 3) + labs(title = "Dataset B", color = "avg_dT3") + default_theme + theme(legend.text = element_text(size = font_size_legend))
+T3_dtB
+
+```
+Save figures
+```{r}
+ggsave(T1_dtA, 
+       filename = "../Figures/Fig_T1_datasetA.svg",
+       device = "svg",
+       height = 6, width = 6.5, units = "in")
+ggsave(T2_dtA, 
+       filename = "../Figures/Fig_avgdT2_datasetA.svg",
+       device = "svg",
+       height = 6, width = 6.5, units = "in")
+ggsave(T3_dtA, 
+       filename = "../Figures/Fig_avgdT3_datasetA.svg",
+       device = "svg",
+       height = 6, width = 6.5, units = "in")
+ggsave(T1_dtB, 
+       filename = "../Figures/Fig_T1_datasetB.svg",
+       device = "svg",
+       height = 6, width = 6.5, units = "in")
+ggsave(T2_dtB, 
+       filename = "../Figures/Fig_avgdT2_datasetB.svg",
+       device = "svg",
+       height = 6, width = 6.5, units = "in")
+ggsave(T3_dtB, 
+       filename = "../Figures/Fig_avgdT3_datasetB.svg",
+       device = "svg",
+       height = 6, width = 6.5, units = "in")
+```

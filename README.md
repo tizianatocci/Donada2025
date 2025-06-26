@@ -6,7 +6,7 @@ Click here to read the article: ["Clonal memory of cell division diverges betwee
 The folder "Code" contains the code used for the analysis.\
 The folder "Datasets" contains the original data.\
 The folder "Output" contains the files obtained during the analysis, such as the MIIC input.\
-The folder "Figures" is the folder where the figure will be saved by running the code.
+The folder "Figures" is the folder where the figure will be saved by running the code. Only the figures concerning the family UMAP have been uploaded.
 
 The analysis is divided in three steps, for each of them a code is available to replicate the results of the article:
 1. Cell fate annotation and obtain figures concerning annotation, gene expression, division times

@@ -15,10 +15,38 @@ The analysis is divided in four steps, for each of them a code is available to r
 After point 4, the MIIC network is obtained with the MIIC server: https://miic.curie.fr/ \
 Each code returns intermediate files, stored in the "Output" folder. The files are already present in the "Output" folder in case you want to replicate only one part of the analysis.
 
-R Version used: 4.3.2\
-Seurat Version: 4\
-Dependencies:\
-install.packages("Seurat")\
-install.packages("tidyverse")\
-install.packages("matrixStats")\
-install.packages("miic")
+R Version used: 4.3.2
+
+📦 R Packages Used
+This project relies on the following R packages. The specific versions listed were used during the analysis to ensure reproducibility.
+
+| Package       | Version        |
+|---------------|----------------|
+| Azimuth       | 0.4.5          |
+| gridExtra     | 2.3            |
+| matrixStats   | 1.1.0          |
+| miic          | 1.9.0          |
+| patchwork     | 1.1.3          |
+| pals          | 1.8            |
+| plotly        | 4.10.4.9000    |
+| rstatix       | 0.7.2          |
+| Seurat        | 4.4.0          |
+| tidyverse     | 2.0.0          |
+
+🔧 Installation\
+To install all required packages (if not already installed), you can use the following R code:
+
+```r
+required_packages <- c(
+  "Azimuth", "gridExtra", "matrixStats", "miic", "patchwork",
+  "pals", "plotly", "rstatix", "Seurat", "tidyverse"
+)
+
+for (pkg in required_packages) {
+  if (!requireNamespace(pkg, quietly = TRUE)) {
+    install.packages(pkg)
+  }
+}
+```
+
+

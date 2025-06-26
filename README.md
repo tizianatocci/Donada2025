@@ -23,13 +23,11 @@ This project relies on the following R packages. The specific versions listed we
 | Package       | Version        |
 |---------------|----------------|
 | Azimuth       | 0.4.5          |
-| gridExtra     | 2.3            |
 | matrixStats   | 1.1.0          |
 | miic          | 1.9.0          |
 | patchwork     | 1.1.3          |
 | pals          | 1.8            |
 | plotly        | 4.10.4.9000    |
-| rstatix       | 0.7.2          |
 | Seurat        | 4.4.0          |
 | tidyverse     | 2.0.0          |
 
@@ -38,8 +36,8 @@ To install all required packages (if not already installed), you can use the fol
 
 ```r
 required_packages <- c(
-  "Azimuth", "gridExtra", "matrixStats", "miic", "patchwork",
-  "pals", "plotly", "rstatix", "Seurat", "tidyverse"
+  "Azimuth", "matrixStats", "miic", "patchwork",
+  "pals", "plotly", "Seurat", "tidyverse"
 )
 
 for (pkg in required_packages) {

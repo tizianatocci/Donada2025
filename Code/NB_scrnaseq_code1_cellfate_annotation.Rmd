@@ -328,7 +328,7 @@ for (i in seq_along(vp_dtB_labeled)) {
 ```
 
 
-##Times of division
+## Times of division
 ```{r}
 font_size_legend <- 16
 expA.realdata$T1 <- as.numeric(as.character(expA.realdata$T1))
@@ -381,4 +381,178 @@ ggsave(T3_dtB,
        filename = "../Figures/Fig_avgdT3_datasetB.svg",
        device = "svg",
        height = 6, width = 6.5, units = "in")
+```
+
+## Feature plot with log2 of colony size
+```{r}
+expA.realdata$Colony_size <- as.numeric(as.character(expA.realdata$Colony_size))
+expA.realdata$Log2CS <- log2(expA.realdata$Colony_size)
+logcs_dtA <- FeaturePlot(expA.realdata, features = "Log2CS", reduction = "umap_expA_sct", pt.size = 3) + labs(title = "Dataset A", color = "Log2CS") + default_theme + theme(legend.text = element_text(size = font_size_legend))
+  
+expB.realdata$Colony_size <- as.numeric(as.character(expB.realdata$Colony_size))
+expB.realdata$Log2CS <- log2(expB.realdata$Colony_size)
+logcs_dtB <- FeaturePlot(expB.realdata, features = "Log2CS", reduction = "umap_expB_sct", pt.size = 3) + labs(title = "Dataset B", color = "Log2CS") + default_theme + theme(legend.text = element_text(size = font_size_legend))
+
+```
+Save figures
+```{r}
+ggsave(logcs_dtA, 
+       filename = "../Figures/Fig_logcs_datasetA.svg",
+       device = "svg",
+       height = 6, width = 6.5, units = "in")
+ggsave(logcs_dtB, 
+       filename = "../Figures/Fig_logcs_datasetB.svg",
+       device = "svg",
+       height = 6, width = 6.5, units = "in")
+```
+
+## Pseudotime analysis
+```{r}
+library(slingshot)
+library(ggbeeswarm)
+library(ggthemes)
+
+pseudotime_analysis <- function(
+    seurat_slot, 
+    name_reduced_dim1, 
+    name_reduced_dim2, 
+    name_reduced_dim3, 
+    colors_fourclusters,
+    PCAcomponents=15){
+  
+  # load experiment
+  Seurat_object <- seurat_slot
+  DefaultAssay(Seurat_object) <- "RNA"
+  sce <- as.SingleCellExperiment(Seurat_object, assay="RNA")
+  reducedDim(sce, name_reduced_dim1) <- reducedDim(sce, name_reduced_dim1)[, 1:PCAcomponents]
+  # using PCA causa UMAP could distort the distances - PCA is linear
+  # using a reduced numbe of components
+  # slingshot inference
+  sce_time <- slingshot(sce, 
+                        reducedDim = name_reduced_dim1, 
+                        clusterLabels = sce@colData$predicted.celltype,
+                        start.clus = c("CD34+CD38-/HPC"),
+                        #end.clus=c("GraP", "EryP/MkP")
+  )  
+  #  collect all found lineages
+  pseudotime_matrix <- slingPseudotime(sce_time)
+  lineages <- colnames(pseudotime_matrix)
+  for (lineage in lineages){
+    Seurat_object[[paste0("slingshot_pseudotime_", lineage)]] <- pseudotime_matrix[, lineage]
+  }
+  
+  # branch and slingshot_pseudotime assignment based on maximum pseudotime
+  # this is particularly important for HPC cells, for which one pseudotime value for lineage is assigned
+  Seurat_object$slingshot_branch <- apply(pseudotime_matrix, 1, function(x) {
+    names(x)[which.max(x)]
+  })
+  Seurat_object$slingshot_pseudotime <- apply(pseudotime_matrix, 1, function(x) max(x, na.rm = TRUE))
+  
+  #Create pseudotime clusters (3) and plot: early, intermediate and late cells
+  Seurat_object$slingshot_pseudotime_quantiles <- ntile(Seurat_object$slingshot_pseudotime, 3)
+  umap_pseudotime_quantiles <- DimPlot(Seurat_object, group.by = "slingshot_pseudotime_quantiles",        pt.size=3)  
+
+  # Plot pca with pseudotime
+  colors <- viridis::viridis(50)  
+  plot(reducedDims(sce_time)$PCA, col = colors[cut(Seurat_object$slingshot_pseudotime, breaks = 50)],     pch = 16, asp = 1)
+  slingshot_lines <- SlingshotDataSet(sce_time)
+  colors <- c("red", "blue", "green", "black", "yellow", "purple")
+  n_curves <- length(slingshot_lines@curves)
+  for (i in 1:n_curves) {
+    lines(slingshot_lines@curves[[i]], col = colors[[i]])
+  }
+  pca_pseudo_lines <- recordPlot()
+  # cell types on pca components
+  pca_celltypes <- DimPlot(Seurat_object, reduction=name_reduced_dim2, cols=colors_fourclusters,      
+  pt.size=3, order=T) + ggtitle("Dataset A") + default_theme
+  
+  # Plot Slingshot pseudotime vs cell stage. 
+  df <- data.frame(
+    pseudotime = Seurat_object$slingshot_pseudotime,
+    branch = Seurat_object$slingshot_branch,
+    cellfate = Seurat_object$predicted.celltype
+  )
+  cellfate_pseudotime <- ggplot(df, aes(x = pseudotime, y = cellfate, colour = branch)) +
+    geom_quasirandom(groupOnX = FALSE) +
+    scale_color_manual(values = c("Lineage1" = "red", "Lineage2" = "blue", "Lineage3"="green")) +
+    theme_classic() +
+    xlab("Slingshot pseudotime") + ylab("Cell type") +
+    ggtitle("Cells ordered by Slingshot pseudotime and branch")
+  # feature plot on umap - pseudotime
+  umap_pseudotime <- FeaturePlot(Seurat_object, features = "slingshot_pseudotime", reduction =            name_reduced_dim3, pt.size = 3)+
+    scale_color_gradient(low = "yellow", high = "red") 
+
+    # feature plot on - branch 
+  umap_branch <- DimPlot(Seurat_object, group.by = "slingshot_branch", reduction = name_reduced_dim3,   pt.size = 3)+
+    scale_color_manual(values = c("Lineage1" = "red", "Lineage2" = "blue", "Lineage3" = "green")) 
+  
+  output <- list("umap_pseudotime_quantiles"=umap_pseudotime_quantiles, 
+                 "umap_pseudotime"=umap_pseudotime,      "umap_branch"=umap_branch, 
+                 "cellfate_pseudotime"=cellfate_pseudotime,
+                 "pca_pseudo_lines"=pca_pseudo_lines,
+                 "pca_celltypes" = pca_celltypes,
+                 "pseudotime_matrix" = pseudotime_matrix
+                 )
+  return(output)
+}
+
+# DatasetA
+seurat_slot <- expA.realdata
+name.rdim1 <- "PCA_EXPA_SCT"
+name.rdim2 <- 'pca_expA_sct'
+name.rdim3 <- "umap_expA_sct"
+slingshot_A <- pseudotime_analysis(seurat_slot, name.rdim1, name.rdim2, name.rdim3, colors_fourclusters)
+pseudo_dtA <- slingshot_A[["umap_pseudotime"]] + labs(title = "Dataset A") + default_theme + theme(legend.text = element_text(size = font_size_legend))
+pseudo_dtA                                                                                           
+# DatasetB  
+seurat_slot <- expB.realdata
+name.rdim1 <- "PCA_EXPB_SCT"
+name.rdim2 <- 'pca_expB_sct'
+name.rdim3 <- "umap_expB_sct"
+slingshot_B <- pseudotime_analysis(seurat_slot, name.rdim1, name.rdim2, name.rdim3, colors_fourclusters)
+pseudo_dtB <- slingshot_B[["umap_pseudotime"]] + labs(title = "DatasetB") + default_theme + theme(legend.text = element_text(size = font_size_legend))
+pseudo_dtB                                  
+
+```
+Save figures
+```{r}
+ggsave(pseudo_dtA, 
+       filename = "../Figures/Fig_pseudotime_datasetA.svg",
+       device = "svg",
+       height = 6, width = 6.5, units = "in")
+ggsave(pseudo_dtB, 
+       filename = "../Figures/Fig_pseudotime_datasetB.svg",
+       device = "svg",
+       height = 6, width = 6.5, units = "in")
+```
+
+Scores for lineages
+```{r}
+plot_scores_for_lineage <- function(mat){
+  
+df <- as.data.frame(mat)
+df_filtered <- df[rowSums(!is.na(df)) > 1, ]
+df_filtered$sample <- rownames(df_filtered)
+
+df_long <- df_filtered %>%
+  pivot_longer(
+    cols = -sample,
+    names_to = "score_type",
+    values_to = "value"
+  )
+
+df_long <- df_long %>%
+  group_by(sample) %>%
+  mutate(value = value / sum(value))
+
+plot_pie <- ggplot(df_long, aes(x = "", y = value, fill = score_type)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y") +
+  facet_wrap(~ sample) +
+  theme_void() +
+  theme(legend.position = "bottom")
+return(plot_pie)}
+
+pie_dtA <- plot_scores_for_lineage(slingshot_A$pseudotime_matrix)
+pie_dtB <- plot_scores_for_lineage(slingshot_B$pseudotime_matrix)
 ```

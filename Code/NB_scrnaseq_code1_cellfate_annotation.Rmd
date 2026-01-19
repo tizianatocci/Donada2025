@@ -388,10 +388,15 @@ ggsave(T3_dtB,
 expA.realdata$Colony_size <- as.numeric(as.character(expA.realdata$Colony_size))
 expA.realdata$Log2CS <- log2(expA.realdata$Colony_size)
 logcs_dtA <- FeaturePlot(expA.realdata, features = "Log2CS", reduction = "umap_expA_sct", pt.size = 3) + labs(title = "Dataset A", color = "Log2CS") + default_theme + theme(legend.text = element_text(size = font_size_legend))
-  
+
+int_breaks <- c(2, 3, 4)
 expB.realdata$Colony_size <- as.numeric(as.character(expB.realdata$Colony_size))
 expB.realdata$Log2CS <- log2(expB.realdata$Colony_size)
-logcs_dtB <- FeaturePlot(expB.realdata, features = "Log2CS", reduction = "umap_expB_sct", pt.size = 3) + labs(title = "Dataset B", color = "Log2CS") + default_theme + theme(legend.text = element_text(size = font_size_legend))
+logcs_dtB <- FeaturePlot(expB.realdata, features = "Log2CS", reduction = "umap_expB_sct", pt.size = 3) + labs(title = "Dataset B", color = "Log2CS") + default_theme + theme(legend.text = element_text(size = font_size_legend)) +  scale_color_gradient(
+    low="lightgrey", high = "blue",
+    breaks = int_breaks,  
+    labels = int_breaks   
+  )
 
 ```
 Save figures
@@ -502,7 +507,8 @@ name.rdim1 <- "PCA_EXPA_SCT"
 name.rdim2 <- 'pca_expA_sct'
 name.rdim3 <- "umap_expA_sct"
 slingshot_A <- pseudotime_analysis(seurat_slot, name.rdim1, name.rdim2, name.rdim3, colors_fourclusters)
-pseudo_dtA <- slingshot_A[["umap_pseudotime"]] + labs(title = "Dataset A") + default_theme + theme(legend.text = element_text(size = font_size_legend))
+pseudo_dtA <- slingshot_A[["umap_pseudotime"]] + labs(title = "Dataset A") + default_theme + theme(legend.text = element_text(size = font_size_legend)) +
+labs(color = "Pseudotime") 
 pseudo_dtA                                                                                           
 # DatasetB  
 seurat_slot <- expB.realdata
@@ -510,7 +516,8 @@ name.rdim1 <- "PCA_EXPB_SCT"
 name.rdim2 <- 'pca_expB_sct'
 name.rdim3 <- "umap_expB_sct"
 slingshot_B <- pseudotime_analysis(seurat_slot, name.rdim1, name.rdim2, name.rdim3, colors_fourclusters)
-pseudo_dtB <- slingshot_B[["umap_pseudotime"]] + labs(title = "DatasetB") + default_theme + theme(legend.text = element_text(size = font_size_legend))
+pseudo_dtB <- slingshot_B[["umap_pseudotime"]] + labs(title = "Dataset B") + default_theme + theme(legend.text = element_text(size = font_size_legend))+
+labs(color = "Pseudotime") 
 pseudo_dtB                                  
 
 ```

@@ -501,6 +501,8 @@ save_input <- function(my_TF, stem.combined, df.merged,
   colnames(supp_file_i) <- c("var_names", 
                              #"var_type", 
                              "is_consequence", "group", "group_color")
+  name_discrete <- c("family", "predicted.celltype", "n_celltypes", "exp")
+  supp_file_i$var_type <- ifelse(supp_file_i$var_names %in% name_discrete, 0, 1)
   
   # check
   identical(sort(supp_file_i[supp_file_i$group=='TF', ]$var_names), sort(union(vars2, my_TF)))

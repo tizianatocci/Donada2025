@@ -30,12 +30,14 @@ In the MIIC networks obtained for the article, flag_avg <-0
 
 ```{r}
 flag_avg <- 0
-# variables thqt are regulators
+# variables that are regulators
 vec_TF <-c("family", 
 "T1", "avg_dT2", "avg_dT3", 
-"max_var", "min_var", 
+#"max_var", "min_var", 
 "predicted.celltype",
-"Colony_size", "homogeneity", "n_celltypes", "exp","distance")
+"Colony_size", 
+#"homogeneity", "n_celltypes", 
+"exp","distance")
 # thresholds for filtering
 th1 <- 0.06
 th2 <- th1*2.4
@@ -71,17 +73,18 @@ stem.combined$exp <- sub("_.*", "", rownames(stem.combined@meta.data))
 ## Add the variables "homogeneity" and "number of cells" 
 which encode the fate similarity inside the same family. 
 ```{r}
-stem.combined$n_cells <- rownames(stem.combined@meta.data)
-new_vars<- compute_homogeneity(stem.combined@meta.data) 
-rownames(new_vars) <- new_vars$n_cells
+#stem.combined$n_cells <- rownames(stem.combined@meta.data)
+#new_vars<- compute_homogeneity(stem.combined@meta.data) 
+#rownames(new_vars) <- new_vars$n_cells
 ```
 
 ## Prepare input for feature selection
 ```{r}
-df.merged <- merge(stem.combined@meta.data, 
-               new_vars[, c("homogeneity", "n_celltypes")],
-               by = "row.names")
-rownames(df.merged) <- df.merged$Row.names
+#df.merged <- merge(stem.combined@meta.data, 
+#               new_vars[, c("homogeneity", "n_celltypes")],
+#               by = "row.names")
+
+df.merged <- stem.combined@meta.data
 df.merged <- df.merged[,vec_TF]
 new_order <-match(row.names(df.merged), colnames(stem.combined))
 df.merged <- df.merged[order(new_order),]

@@ -141,6 +141,91 @@ harmonize_citeseq_ann <- function(exp.realdata){
   return(exp.realdata)
 }
 
+# Pseudotime trajectory analysis
+pseudotime_analysis <- function(
+    seurat_slot, 
+    name_reduced_dim1, 
+    name_reduced_dim2, 
+    name_reduced_dim3, 
+    colors_fourclusters,
+    PCAcomponents=15){
+  
+  # load experiment
+  Seurat_object <- seurat_slot
+  DefaultAssay(Seurat_object) <- "RNA"
+  sce <- as.SingleCellExperiment(Seurat_object, assay="RNA")
+  reducedDim(sce, name_reduced_dim1) <- reducedDim(sce, name_reduced_dim1)[, 1:PCAcomponents]
+  # using PCA causa UMAP could distort the distances - PCA is linear
+  # using a reduced numbe of components
+  # slingshot inference
+  sce_time <- slingshot(sce, 
+                        reducedDim = name_reduced_dim1, 
+                        clusterLabels = sce@colData$predicted.celltype,
+                        start.clus = c("CD34+CD38-/HPC"),
+                        #end.clus=c("GraP", "EryP/MkP")
+  )  
+  #  collect all found lineages
+  pseudotime_matrix <- slingPseudotime(sce_time)
+  lineages <- colnames(pseudotime_matrix)
+  for (lineage in lineages){
+    Seurat_object[[paste0("slingshot_pseudotime_", lineage)]] <- pseudotime_matrix[, lineage]
+  }
+  
+  # branch and slingshot_pseudotime assignment based on maximum pseudotime
+  # this is particularly important for HPC cells, for which one pseudotime value for lineage is assigned
+  Seurat_object$slingshot_branch <- apply(pseudotime_matrix, 1, function(x) {
+    names(x)[which.max(x)]
+  })
+  Seurat_object$slingshot_pseudotime <- apply(pseudotime_matrix, 1, function(x) max(x, na.rm = TRUE))
+  
+  #Create pseudotime clusters (3) and plot: early, intermediate and late cells
+  Seurat_object$slingshot_pseudotime_quantiles <- ntile(Seurat_object$slingshot_pseudotime, 3)
+  umap_pseudotime_quantiles <- DimPlot(Seurat_object, group.by = "slingshot_pseudotime_quantiles",        pt.size=3)  
+  
+  # Plot pca with pseudotime
+  colors <- viridis::viridis(50)  
+  plot(reducedDims(sce_time)$PCA, col = colors[cut(Seurat_object$slingshot_pseudotime, breaks = 50)],     pch = 16, asp = 1)
+  slingshot_lines <- SlingshotDataSet(sce_time)
+  colors <- c("red", "blue", "green", "black", "yellow", "purple")
+  n_curves <- length(slingshot_lines@curves)
+  for (i in 1:n_curves) {
+    lines(slingshot_lines@curves[[i]], col = colors[[i]])
+  }
+  pca_pseudo_lines <- recordPlot()
+  # cell types on pca components
+  pca_celltypes <- DimPlot(Seurat_object, reduction=name_reduced_dim2, cols=colors_fourclusters,      
+                           pt.size=3, order=T) + ggtitle("Dataset A") + default_theme
+  
+  # Plot Slingshot pseudotime vs cell stage. 
+  df <- data.frame(
+    pseudotime = Seurat_object$slingshot_pseudotime,
+    branch = Seurat_object$slingshot_branch,
+    cellfate = Seurat_object$predicted.celltype
+  )
+  cellfate_pseudotime <- ggplot(df, aes(x = pseudotime, y = cellfate, colour = branch)) +
+    geom_quasirandom(groupOnX = FALSE) +
+    scale_color_manual(values = c("Lineage1" = "red", "Lineage2" = "blue", "Lineage3"="green")) +
+    theme_classic() +
+    xlab("Slingshot pseudotime") + ylab("Cell type") +
+    ggtitle("Cells ordered by Slingshot pseudotime and branch")
+  # feature plot on umap - pseudotime
+  umap_pseudotime <- FeaturePlot(Seurat_object, features = "slingshot_pseudotime", reduction =            name_reduced_dim3, pt.size = 3)+
+    scale_color_gradient(low = "yellow", high = "red") 
+  
+  # feature plot on - branch 
+  umap_branch <- DimPlot(Seurat_object, group.by = "slingshot_branch", reduction = name_reduced_dim3,   pt.size = 3)+
+    scale_color_manual(values = c("Lineage1" = "red", "Lineage2" = "blue", "Lineage3" = "green")) 
+  
+  output <- list("umap_pseudotime_quantiles"=umap_pseudotime_quantiles, 
+                 "umap_pseudotime"=umap_pseudotime,      "umap_branch"=umap_branch, 
+                 "cellfate_pseudotime"=cellfate_pseudotime,
+                 "pca_pseudo_lines"=pca_pseudo_lines,
+                 "pca_celltypes" = pca_celltypes,
+                 "pseudotime_matrix" = pseudotime_matrix,
+                 "df" = df
+  )
+  return(output)
+}
 
 #===============================================================================
 # Routines specific for the file: "NB_scrnaseq_code2_cosinedistance_computation.Rmd"

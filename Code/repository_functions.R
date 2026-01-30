@@ -227,6 +227,27 @@ pseudotime_analysis <- function(
   return(output)
 }
 
+# Spearman correlation coefficient
+spearman_correlation <- function(slingshot_df, col_vector, plot_title, default_theme, pseudotime_col = "pseudotime", col_name = "Log2CS") {
+  
+  slingshot_df[[col_name]] <- col_vector[rownames(slingshot_df)]
+  
+  x <- slingshot_df[[col_name]]
+  y <- slingshot_df[[pseudotime_col]]
+  
+  result <- cor(x, y, method = "spearman", use = "complete.obs")
+  
+  df <- data.frame(x = x, y = y)
+  fig <- ggplot(df, aes(x = x, y = y)) +
+    geom_point(color = "black", size=3) +
+    labs(title = plot_title,
+         x = "Log2(Colony Size)",
+         y = "Pseudotime values")  + default_theme 
+  
+  output <- list("result"=result, "fig"=fig)
+  return(output)
+}
+
 #===============================================================================
 # Routines specific for the file: "NB_scrnaseq_code2_cosinedistance_computation.Rmd"
 #===============================================================================

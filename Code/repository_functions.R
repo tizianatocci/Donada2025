@@ -599,7 +599,7 @@ save_input <- function(my_TF, stem.combined, df.merged,
   is_consequence[colnames(df_input) %in% my_TF] <- 0
   is_consequence[colnames(df_input) %in% vars2] <- 0
   #is_consequence[colnames(df_input[,-1]) %in% name_nc] <- 0
-  group <- ifelse(is_consequence==0,"TF","Other")
+  group <- ifelse(is_consequence==0,"Reg","Other")
   color <- ifelse(is_consequence==0,"F0C69C","A9EBA9")
   supp_file_i <- data.frame(colnames(df_input),
                             #as.numeric(lens_i), 
@@ -611,7 +611,7 @@ save_input <- function(my_TF, stem.combined, df.merged,
   supp_file_i$var_type <- ifelse(supp_file_i$var_names %in% name_discrete, 0, 1)
   
   # check
-  identical(sort(supp_file_i[supp_file_i$group=='TF', ]$var_names), sort(union(vars2, my_TF)))
+  identical(sort(supp_file_i[supp_file_i$group=='Reg', ]$var_names), sort(union(vars2, my_TF)))
   
   # save file
   write.csv(df_input, sprintf("../Output/input_%s_%s.csv", n_try, flag_fam), row.names=FALSE)
